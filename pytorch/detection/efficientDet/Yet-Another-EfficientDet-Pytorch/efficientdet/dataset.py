@@ -53,9 +53,10 @@ class CocoDataset(Dataset):
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = image_info["file_name"].split("/")
-        fixed_path = path[0] + "/" + path[-1]
-        path = os.path.join(self.root_dir, self.set_name, fixed_path)
+        fixed_path = "train" + "/" + path[-1]
+        path = os.path.join("datasets", "coco", fixed_path)
         img = cv2.imread(path)
+
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         return img.astype(np.float32) / 255.0
