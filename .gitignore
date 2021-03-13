@@ -7,3 +7,8 @@
 *.pth
 **/.ipynb_checkpoints
 *.ipynb
+logs/
+dataset/
+pytorch/detection/efficientDet/Yet-Another-EfficientDet-Pytorch/datasets/
+pytorch/detection/efficientDet/Yet-Another-EfficientDet-Pytorch/efficientdet/loss.py.1
+pytorch/detection/efficientDet/Yet-Another-EfficientDet-Pytorch/nohup.out

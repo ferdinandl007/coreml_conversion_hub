@@ -42,13 +42,15 @@ class CocoDataset(Dataset):
         return len(self.image_ids)
 
     def __getitem__(self, idx):
-
-        img = self.load_image(idx)
-        annot = self.load_annotations(idx)
-        sample = {"img": img, "annot": annot}
-        if self.transform:
-            sample = self.transform(sample)
-        return sample
+        try: ## protect against corrupted images
+            img = self.load_image(idx)
+            annot = self.load_annotations(idx)
+            sample = {"img": img, "annot": annot}
+            if self.transform:
+                sample = self.transform(sample)
+            return sample
+        except:
+            return None
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
@@ -67,7 +69,6 @@ class CocoDataset(Dataset):
             imgIds=self.image_ids[image_index], iscrowd=False
         )
         annotations = np.zeros((0, 5))
-
         # some images appear to miss annotations
         if len(annotations_ids) == 0:
             return annotations
@@ -93,6 +94,7 @@ class CocoDataset(Dataset):
 
 
 def collater(data):
+    data = list(filter(lambda x: x is not None, data))
     imgs = [s["img"] for s in data]
     annots = [s["annot"] for s in data]
     scales = [s["scale"] for s in data]
@@ -148,6 +150,7 @@ class Resizer(object):
             "annot": torch.from_numpy(annots),
             "scale": scale,
         }
+
 
 
 class Augmenter(object):

@@ -34,15 +34,6 @@ class BBoxTransform(nn.Module):
 
         return torch.stack([xmin, ymin, xmax, ymax], dim=2)
 
-def transform_anchors(anchors):
-
-    y_centers_a = (anchors[0, :, 0:1] + anchors[0, :, 2:3]) / 2
-    x_centers_a = (anchors[0, :, 1:2] + anchors[0, :, 3:4]) / 2
-    ha = anchors[0, :, 2:3] - anchors[0, :, 0:1]
-    wa = anchors[0, :, 3:4] - anchors[0, :, 1:2]
-    return torch.cat((y_centers_a.data, x_centers_a.data, ha.data, wa.data), axis=1)
-    # return (y_centers_a.data, x_centers_a.data, ha.data, wa.data)
-
 
 class ClipBoxes(nn.Module):
 
@@ -72,6 +63,8 @@ class Anchors(nn.Module):
 
         if pyramid_levels is None:
             self.pyramid_levels = [3, 4, 5, 6, 7]
+        else:
+            self.pyramid_levels = pyramid_levels
 
         self.strides = kwargs.get('strides', [2 ** x for x in self.pyramid_levels])
         self.scales = np.array(kwargs.get('scales', [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]))
@@ -80,7 +73,7 @@ class Anchors(nn.Module):
         self.last_anchors = {}
         self.last_shape = None
 
-    def forward(self, image_shape, dtype=torch.float32):
+    def forward(self, image, dtype=torch.float32):
         """Generates multiscale anchor boxes.
 
         Args:
@@ -98,10 +91,10 @@ class Anchors(nn.Module):
         Raises:
           ValueError: input size must be the multiple of largest feature stride.
         """
-        # image_shape = image.shape[2:]
+        image_shape = image.shape[2:]
 
-        if image_shape == self.last_shape and torch.device("cpu") in self.last_anchors:
-            return self.last_anchors[torch.device("cpu")]
+        if image_shape == self.last_shape and image.device in self.last_anchors:
+            return self.last_anchors[image.device]
 
         if self.last_shape is None or self.last_shape != image_shape:
             self.last_shape = image_shape
@@ -138,9 +131,9 @@ class Anchors(nn.Module):
 
         anchor_boxes = np.vstack(boxes_all)
 
-        anchor_boxes = torch.from_numpy(anchor_boxes.astype(dtype)).to(torch.device("cpu"))
+        anchor_boxes = torch.from_numpy(anchor_boxes.astype(dtype)).to(image.device)
         anchor_boxes = anchor_boxes.unsqueeze(0)
 
         # save it for later use to reduce overhead
-        self.last_anchors[torch.device("cpu")] = anchor_boxes
+        self.last_anchors[image.device] = anchor_boxes
         return anchor_boxes
